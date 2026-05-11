@@ -70,22 +70,24 @@ market-moving power, so investors can focus on what actually matters.
 ---
 
 ## Project Structure
+
+```
 noise-filter/
 ├── backend/
 │   ├── app/
-│   │   ├── main.py          # FastAPI app — 5 endpoints
-│   │   ├── models.py        # SQLAlchemy DB models
-│   │   ├── database.py      # DB connection & session
-│   │   └── init_db.py       # Create tables
+│   │   ├── main.py             # FastAPI app — 5 endpoints
+│   │   ├── models.py           # SQLAlchemy DB models
+│   │   ├── database.py         # DB connection & session
+│   │   └── init_db.py          # Create tables
 │   ├── pipeline/
-│   │   ├── scraper.py       # Multi-source scraper (6 sources)
-│   │   ├── scorer.py        # VADER sentiment scoring
-│   │   ├── price_fetcher.py # yfinance price data
-│   │   ├── archive_scraper.py # Historical RSS scraping
-│   │   └── scheduler.py     # Automated pipeline runner
+│   │   ├── scraper.py          # Multi-source scraper (6 sources)
+│   │   ├── scorer.py           # VADER sentiment scoring
+│   │   ├── price_fetcher.py    # yfinance price data
+│   │   ├── archive_scraper.py  # Historical RSS scraping
+│   │   └── scheduler.py        # Automated pipeline runner
 │   ├── ml/
-│   │   ├── train.py         # XGBoost training pipeline
-│   │   └── predict.py       # Real-time prediction
+│   │   ├── train.py            # XGBoost training pipeline
+│   │   └── predict.py          # Real-time prediction
 │   └── requirements.txt
 ├── frontend/
 │   └── src/
@@ -96,8 +98,9 @@ noise-filter/
 │       └── App.jsx
 ├── powerbi/
 │   └── NoiseFilter_Report.pbix
-├── run.bat                  # One-click startup
+├── run.bat
 └── README.md
+```
 
 ## API Endpoints
 
@@ -216,15 +219,6 @@ Every day at 8am:
 → Match headlines to T+1, T+2 price moves
 → Retrain XGBoost model automatically
 → Update signal scores per category
-
-## Screenshots
-
-> Dashboard, Historical Analysis, and Real-time Analyser
-> ![DASHBOARD](image.png)
-> ![HISTORICAL ANALYSIS](image-1.png)
-> ![REAL TIME ANALYSER](image-2.png)
-
----
 
 ## Author
 
