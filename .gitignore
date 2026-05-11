@@ -1,0 +1,16 @@
+# Python
+venv/
+__pycache__/
+*.pyc
+*.pkl
+.env
+
+# Node
+node_modules/
+dist/
+
+# Database
+*.db
+
+# ML saved models
+backend/ml/saved/
