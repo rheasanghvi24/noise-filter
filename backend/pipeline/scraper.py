@@ -69,6 +69,20 @@ def fetch_from_rss() -> list:
          "https://www.livemint.com/rss/markets"),
         ("Business Standard",
          "https://www.business-standard.com/rss/markets-106.rss"),
+                 ("Mint Money",
+         "https://www.livemint.com/rss/money"),
+        ("Mint Companies",
+         "https://www.livemint.com/rss/companies"),
+        ("ET Industry",
+         "https://economictimes.indiatimes.com/industry/rssfeeds/13352306.cms"),
+        ("ET Economy",
+         "https://economictimes.indiatimes.com/news/economy/rssfeeds/1373380119.cms"),
+        ("Moneycontrol Business",
+         "https://www.moneycontrol.com/rss/business.xml"),
+        ("Moneycontrol IPO",
+         "https://www.moneycontrol.com/rss/iponews.xml"),
+        ("NDTV Business",
+         "https://feeds.feedburner.com/ndtv/business"),
     ]
     articles = []
     for name, feed_url in feeds:

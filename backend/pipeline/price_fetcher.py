@@ -2,7 +2,6 @@ import sys
 import os
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-
 import yfinance as yf
 from datetime import datetime, timedelta
 from app.database import SessionLocal
@@ -16,6 +15,13 @@ SYMBOLS = [
     "INFY.NS",      # Infosys
     "TCS.NS",       # TCS
 ]
+
+
+def safe_float(val):
+    if hasattr(val, 'iloc'):
+        val = val.iloc[0]
+    return float(val)
+
 
 def fetch_and_save(days_back: int = 365 * 3):
     db = SessionLocal()
@@ -33,6 +39,12 @@ def fetch_and_save(days_back: int = 365 * 3):
                     print(f"    No data returned for {symbol}")
                     continue
 
+                # Flatten MultiIndex columns — newer yfinance returns
+                # columns like ('Open', '^NSEI') instead of 'Open'
+                if isinstance(df.columns, type(df.columns)) and hasattr(df.columns, 'droplevel'):
+                    if df.columns.nlevels > 1:
+                        df.columns = df.columns.droplevel(1)
+
                 df["pct_change"] = df["Close"].pct_change() * 100
                 df = df.dropna()
 
@@ -48,12 +60,12 @@ def fetch_and_save(days_back: int = 365 * 3):
                     price = StockPrice(
                         symbol      = symbol,
                         date        = date,
-                        open_price  = float(row["Open"]),
-                        close_price = float(row["Close"]),
-                        high_price  = float(row["High"]),
-                        low_price   = float(row["Low"]),
-                        volume      = float(row["Volume"]),
-                        pct_change  = float(row["pct_change"]),
+                        open_price  = safe_float(row["Open"]),
+                        close_price = safe_float(row["Close"]),
+                        high_price  = safe_float(row["High"]),
+                        low_price   = safe_float(row["Low"]),
+                        volume      = safe_float(row["Volume"]),
+                        pct_change  = safe_float(row["pct_change"]),
                     )
                     db.add(price)
                     saved += 1
@@ -66,6 +78,7 @@ def fetch_and_save(days_back: int = 365 * 3):
                 continue
     finally:
         db.close()
+
 
 if __name__ == "__main__":
     print("=== Price Fetcher Starting ===")
