@@ -28,7 +28,6 @@ def build_training_data():
         print(f"Headlines with scores : {len(headlines)}")
         print(f"Nifty price rows      : {len(prices_raw)}")
 
-        # Build price lookup — normalise all keys to date objects
         price_dict = {}
         for p in prices_raw:
             try:
@@ -187,17 +186,14 @@ def train():
 
     analyse_categories(df)
 
-    # Encode BEFORE splitting
     le_cat = LabelEncoder()
     le_src = LabelEncoder()
     df["category_enc"] = le_cat.fit_transform(df["category"])
     df["source_enc"]   = le_src.fit_transform(df["source"])
 
-    # Rebuild matched_df AFTER encoding
     matched_df = df[df["t1_move"] != 0].copy()
     print(f"\nRows with price matches: {len(matched_df)}")
 
-    # Decide training set
     if len(matched_df) >= 20:
         train_df = matched_df
         print("Training on price-matched rows only.")
@@ -220,7 +216,6 @@ def train():
     X = train_df[features]
     y = train_df["is_signal"]
 
-    # Check we have both classes
     unique_classes = y.unique()
     if len(unique_classes) < 2:
         print(f"\nOnly 1 class ({unique_classes[0]}) in training data.")
@@ -230,9 +225,9 @@ def train():
         print(f"  Sentiment scoring    : FULLY WORKING ({len(df)} headlines scored)")
         print(f"  Category analysis    : FULLY WORKING ({len(df)} categorised)")
         print(f"  Price correlation    : BUILDING ({len(matched_df)} matches so far)")
-        print(f"  XGBoost model        : PENDING (needs price data for May 2026)")
-        print(f"\nRun price_fetcher.py daily — model trains automatically once")
-        print(f"May 2026 trading data becomes available.")
+        print(f"  XGBoost model        : PENDING (needs both signal and noise examples)")
+        print(f"\nRun the scraper + price fetcher daily — model trains automatically")
+        print(f"once both classes are present in the matched data.")
         return
 
     X_train, X_test, y_train, y_test = train_test_split(
@@ -254,7 +249,6 @@ def train():
     acc    = accuracy_score(y_test, y_pred)
     print(f"Model accuracy: {acc:.1%}")
 
-    # Only print full report if both classes in test set
     if len(set(y_test)) > 1:
         print(classification_report(
             y_test, y_pred,
