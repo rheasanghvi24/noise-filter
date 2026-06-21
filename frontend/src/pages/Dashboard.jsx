@@ -79,6 +79,10 @@ export default function Dashboard() {
   const [filter, setFilter]         = useState("All");
   const [loading, setLoading]       = useState(true);
 
+  const [expandedId, setExpandedId] = useState(null);
+  const [explanation, setExplanation] = useState(null);
+  const [explainLoading, setExplainLoading] = useState(false);
+
   useEffect(() => {
     Promise.all([
       fetch(`${API}/headlines?limit=100`).then(r=>r.json()),
@@ -91,6 +95,26 @@ export default function Dashboard() {
       setLoading(false);
     }).catch(()=>setLoading(false));
   }, []);
+
+  const toggleExplain = async (headlineId) => {
+    if (expandedId === headlineId) {
+      setExpandedId(null);
+      setExplanation(null);
+      return;
+    }
+    setExpandedId(headlineId);
+    setExplanation(null);
+    setExplainLoading(true);
+    try {
+      const res = await fetch(`${API}/explain/${headlineId}`);
+      const data = await res.json();
+      setExplanation(data);
+    } catch (e) {
+      setExplanation({ error: "Could not load explanation" });
+    } finally {
+      setExplainLoading(false);
+    }
+  };
 
   const filtered = filter==="All"
     ? headlines
@@ -259,7 +283,7 @@ export default function Dashboard() {
             fontSize:12, fontWeight:600, color:"var(--text-secondary)",
             textTransform:"uppercase", letterSpacing:"0.08em",
           }}>
-            Live Headlines — {filtered.length} shown
+            Live Headlines — {filtered.length} shown · click a row to see why
           </div>
           <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
             {cats.map(cat=>(
@@ -277,55 +301,154 @@ export default function Dashboard() {
 
         <div style={{ maxHeight:460, overflowY:"auto" }}>
           {filtered.map((h,i)=>(
-            <div key={h.id} style={{
-              padding:"14px 22px",
-              borderBottom:"1px solid var(--border)",
-              display:"grid",
-              gridTemplateColumns:"1fr 100px 80px",
-              gap:16, alignItems:"center",
-              background:i%2===0?"transparent":"rgba(255,255,255,0.01)",
-            }}
-              onMouseEnter={e=>e.currentTarget.style.background="var(--bg-hover)"}
-              onMouseLeave={e=>e.currentTarget.style.background=i%2===0?"transparent":"rgba(255,255,255,0.01)"}
-            >
-              <div>
-                <a href={h.url} target="_blank" rel="noreferrer" style={{
-                  color:"var(--text-primary)", textDecoration:"none",
-                  fontSize:13, fontWeight:500, lineHeight:1.4,
-                }}>
-                  {h.title}
-                </a>
-                <div style={{
-                  fontSize:11, color:"var(--text-muted)",
-                  marginTop:3, display:"flex", gap:8,
-                }}>
-                  <span>{h.source}</span>
-                  <span>·</span>
-                  <span>{h.published_at?.slice(0,10)}</span>
-                  <span>·</span>
-                  <span style={{
-                    color:CAT_COLORS[
-                      ["General","RBI","FII","Earnings",
-                       "Geopolitics","Regulation","Budget"]
-                      .indexOf(h.category)%CAT_COLORS.length
-                    ],
-                  }}>{h.category}</span>
+            <div key={h.id}>
+              <div
+                onClick={() => toggleExplain(h.id)}
+                style={{
+                  padding:"14px 22px",
+                  borderBottom: expandedId === h.id ? "none" : "1px solid var(--border)",
+                  display:"grid",
+                  gridTemplateColumns:"1fr 100px 80px 20px",
+                  gap:16, alignItems:"center",
+                  background: expandedId === h.id
+                    ? "var(--bg-hover)"
+                    : i%2===0?"transparent":"rgba(255,255,255,0.01)",
+                  cursor:"pointer",
+                }}
+                onMouseEnter={e=>{ if(expandedId !== h.id) e.currentTarget.style.background="var(--bg-hover)"; }}
+                onMouseLeave={e=>{ if(expandedId !== h.id) e.currentTarget.style.background=i%2===0?"transparent":"rgba(255,255,255,0.01)"; }}
+              >
+                <div>
+                  <a href={h.url} target="_blank" rel="noreferrer"
+                    onClick={(e) => e.stopPropagation()}
+                    style={{
+                      color:"var(--text-primary)", textDecoration:"none",
+                      fontSize:13, fontWeight:500, lineHeight:1.4,
+                    }}>
+                    {h.title}
+                  </a>
+                  <div style={{
+                    fontSize:11, color:"var(--text-muted)",
+                    marginTop:3, display:"flex", gap:8,
+                  }}>
+                    <span>{h.source}</span>
+                    <span>·</span>
+                    <span>{h.published_at?.slice(0,10)}</span>
+                    <span>·</span>
+                    <span style={{
+                      color:CAT_COLORS[
+                        ["General","RBI","FII","Earnings",
+                         "Geopolitics","Regulation","Budget"]
+                        .indexOf(h.category)%CAT_COLORS.length
+                      ],
+                    }}>{h.category}</span>
+                  </div>
                 </div>
+                <Badge label={h.sentiment_label}/>
+                <div style={{
+                  fontFamily:"'JetBrains Mono',monospace",
+                  fontSize:13, fontWeight:600,
+                  color:h.sentiment_score>0.05
+                    ?"var(--accent-green)"
+                    :h.sentiment_score<-0.05
+                    ?"var(--accent-red)"
+                    :"var(--text-muted)",
+                  textAlign:"right",
+                }}>
+                  {h.sentiment_score>0?"+":""}
+                  {h.sentiment_score?.toFixed(3)}
+                </div>
+                <div style={{
+                  color:"var(--text-muted)",
+                  fontSize:12, textAlign:"center",
+                  transform: expandedId === h.id ? "rotate(180deg)" : "rotate(0deg)",
+                  transition:"transform .2s",
+                }}>▾</div>
               </div>
-              <Badge label={h.sentiment_label}/>
-              <div style={{
-                fontFamily:"'JetBrains Mono',monospace",
-                fontSize:13, fontWeight:600,
-                color:h.sentiment_score>0.05
-                  ?"var(--accent-green)"
-                  :h.sentiment_score<-0.05
-                  ?"var(--accent-red)"
-                  :"var(--text-muted)",
-                textAlign:"right",
-              }}>
-                {h.sentiment_score>0?"+":""}
-                {h.sentiment_score?.toFixed(3)}
-              </div>
+
+              {expandedId === h.id && (
+                <div style={{
+                  padding:"4px 22px 18px",
+                  borderBottom:"1px solid var(--border)",
+                  background:"var(--bg-hover)",
+                }}>
+                  {explainLoading && (
+                    <div style={{ fontSize:12, color:"var(--text-muted)", padding:"8px 0" }}>
+                      Loading explanation...
+                    </div>
+                  )}
+
+                  {!explainLoading && explanation && !explanation.error && (
+                    <div style={{
+                      background:"var(--bg-secondary)",
+                      borderRadius:10, padding:"14px 16px",
+                      marginTop:4,
+                    }}>
+                      <div style={{
+                        fontSize:13, color:"var(--text-primary)",
+                        lineHeight:1.6, marginBottom:12,
+                      }}>
+                        {explanation.explanation}
+                      </div>
+
+                      {explanation.word_contributions?.length > 0 && (
+                        <div style={{ marginBottom:12 }}>
+                          <div style={{
+                            fontSize:10, color:"var(--text-muted)",
+                            textTransform:"uppercase", letterSpacing:"0.06em",
+                            marginBottom:6,
+                          }}>Sentiment-driving words</div>
+                          <div style={{ display:"flex", gap:6, flexWrap:"wrap" }}>
+                            {explanation.word_contributions.map((w,wi) => (
+                              <span key={wi} style={{
+                                fontSize:11, padding:"3px 9px", borderRadius:20,
+                                background: w.direction === "positive" ? "#052e1c" : "#2d0a0a",
+                                color: w.direction === "positive" ? "#10b981" : "#ef4444",
+                                fontWeight:600,
+                              }}>
+                                {w.word} ({w.score > 0 ? "+" : ""}{w.score})
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {explanation.category_context && (
+                        <div style={{
+                          display:"grid", gridTemplateColumns:"repeat(3,1fr)",
+                          gap:10,
+                        }}>
+                          {[
+                            ["Signal Rate", `${explanation.category_context.signal_rate}%`, "#f59e0b"],
+                            ["Avg T+1 Move", `${explanation.category_context.avg_t1_move>0?"+":""}${explanation.category_context.avg_t1_move}%`,
+                              explanation.category_context.avg_t1_move>0?"#10b981":"#ef4444"],
+                            ["Based on", `${explanation.category_context.sample_count} headlines`, "var(--text-secondary)"],
+                          ].map(([label,val,color])=>(
+                            <div key={label} style={{
+                              background:"var(--bg-primary)",
+                              borderRadius:8, padding:"8px 10px",
+                              textAlign:"center",
+                            }}>
+                              <div style={{ fontSize:9, color:"var(--text-muted)", marginBottom:3 }}>
+                                {label}
+                              </div>
+                              <div style={{ fontSize:13, fontWeight:700, color }}>
+                                {val}
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {!explainLoading && explanation?.error && (
+                    <div style={{ fontSize:12, color:"var(--accent-red)", padding:"8px 0" }}>
+                      {explanation.error}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           ))}
         </div>

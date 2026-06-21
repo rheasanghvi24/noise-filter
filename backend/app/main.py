@@ -157,3 +157,17 @@ def get_summary(db: Session = Depends(get_db)):
         "price_rows":       price_rows,
         "categories":       categories,
     }
+
+from ml.explain import explain_headline as explain_headline_fn
+
+@app.get("/explain/{headline_id}")
+def explain_headline_endpoint(headline_id: int, db: Session = Depends(get_db)):
+    headline = db.query(Headline).filter(Headline.id == headline_id).first()
+    if not headline:
+        return {"error": "Headline not found"}
+
+    result = explain_headline_fn(
+        title=headline.title,
+        category=headline.category or "General",
+    )
+    return result
